@@ -61,7 +61,7 @@ func (l *Logger) SysLoggerInit(conf Config) {
 	l.LogRotationMin = conf.logRotationMin
 	l.LogRotationMb = conf.logRotationMb
 
-	l.setNextRotationTime()
+
 	fmt.Println(l.filename)
 }
 
@@ -105,27 +105,31 @@ func (l *Logger) setNextRotationTime() {
 	l.nextRotationTime = now
 }
 
-func (l *Logger) write(s string) {
+func (l *Logger) SysLoggerMain(s string) {
 
-	if l.LogRotationMin > 0 {
-		now := time.Now().In(l.location).Unix()
-		if now >= l.nextRotationTime {
-			l.rotationRequested = true
-			l.timeBasedRotation = true
+	l.setNextRotationTime()
+
+	for {
+		if l.LogRotationMin > 0 {
+			now := time.Now().In(l.location).Unix()
+			if now >= l.nextRotationTime {
+				l.rotationRequested = true
+				l.timeBasedRotation = true
+			}
 		}
-	}
 
-	if !l.rotationRequested && l.LogRotationMb > 0 {
-		if l.getFileSize(l.filename) >= l.LogRotationMb * 1024 {
-			l.rotationRequested = true
-			l.sizeRotationFor |= LogDestinationStderr
+		if !l.rotationRequested && l.LogRotationMb > 0 {
+			if l.getFileSize(l.filename) >= l.LogRotationMb * 1024 {
+				l.rotationRequested = true
+				l.sizeRotationFor |= LogDestinationStderr
+			}
+			//TODO CSV
+
 		}
-		//TODO CSV
 
-	}
-
-	if l.rotationRequested {
-		l.logfileRotate(l.timeBasedRotation, l.sizeRotationFor)
+		if l.rotationRequested {
+			l.logfileRotate(l.timeBasedRotation, l.sizeRotationFor)
+		}
 	}
 
 
