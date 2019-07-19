@@ -11,11 +11,12 @@ func TestSysLoggerStart(t *testing.T) {
 
 	logger := Logger{}
 	config := Config{
-		logDirectory:"/tmp/logger",
-		logFilename:logFileMode,
-		logFileMode:0600,
-		logTimezone:"Local",
-		logRotationAge:2,
+		logDirectory:    "/tmp/logger",
+		logFilename:     logFileMode,
+		logFileMode:     0600,
+		logTimezone:     "Local",
+		logRotationMin:  2,
+		logRotationMb: 10,
 	}
 	logger.SysLoggerInit(config)
 }

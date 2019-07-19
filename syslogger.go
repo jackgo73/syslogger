@@ -9,6 +9,9 @@ import (
 const (
 	// changeme!
 	logFileMode = "syslogger-2006-01-02_150405.log"
+
+	LogDestinationStderr = 1
+	LogDestinationCsvlog = 8
 )
 
 type Logger struct {
@@ -18,20 +21,22 @@ type Logger struct {
 	location          *time.Location
 	filename          string
 	syslogFile        *os.File
-	LogRotationAge    int
+	LogRotationMin    int
 	nextRotationTime  int64
+	LogRotationMb     int64
 	rotationRequested bool
 	timeBasedRotation bool
+	sizeRotationFor   int
 }
 
 type Config struct {
-	logDirectory    string
-	logFilename     string
-	logFileMode     int64
-	logRotationAge  int
-	logRotationSize string
-	logLinePrefix   string
-	logTimezone     string
+	logDirectory   string
+	logFilename    string
+	logFileMode    int64
+	logRotationMin int
+	logRotationMb  int64
+	logLinePrefix  string
+	logTimezone    string
 }
 
 type Utils struct {
@@ -53,7 +58,8 @@ func (l *Logger) SysLoggerInit(conf Config) {
 	}
 	l.filename = filename
 	l.syslogFile = syslogFile
-	l.LogRotationAge = conf.logRotationAge
+	l.LogRotationMin = conf.logRotationMin
+	l.LogRotationMb = conf.logRotationMb
 
 	l.setNextRotationTime()
 	fmt.Println(l.filename)
@@ -87,12 +93,12 @@ func (l *Logger) logFileOpen(filename string, mode int64) (*os.File, error) {
 
 // Determine the next planned rotation time, and store in next_rotation_time.
 func (l *Logger) setNextRotationTime() {
-	if l.LogRotationAge <= 0 {
+	if l.LogRotationMin <= 0 {
 		return
 	}
 	// convert to seconds
 	var rotinterval int64
-	rotinterval = int64(l.LogRotationAge) * 60
+	rotinterval = int64(l.LogRotationMin) * 60
 	now := time.Now().In(l.location).Unix()
 	now -= now % rotinterval
 	now += rotinterval
@@ -101,11 +107,38 @@ func (l *Logger) setNextRotationTime() {
 
 func (l *Logger) write(s string) {
 
-	if l.LogRotationAge > 0 {
+	if l.LogRotationMin > 0 {
 		now := time.Now().In(l.location).Unix()
 		if now >= l.nextRotationTime {
 			l.rotationRequested = true
 			l.timeBasedRotation = true
 		}
 	}
+
+	if !l.rotationRequested && l.LogRotationMb > 0 {
+		if l.getFileSize(l.filename) >= l.LogRotationMb * 1024 {
+			l.rotationRequested = true
+			l.sizeRotationFor |= LogDestinationStderr
+		}
+		//TODO CSV
+
+	}
+
+	if l.rotationRequested {
+		l.logfileRotate(l.timeBasedRotation, l.sizeRotationFor)
+	}
+
+
+}
+
+func (l *Logger) logfileRotate(timeBasedRotation bool, sizeRotationFor int){
+
+}
+
+func (l *Logger) getFileSize(path string) int64 {
+	file, err := os.Stat(path);
+	if err != nil {
+		return 0
+	}
+	return file.Size()
 }
