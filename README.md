@@ -1,13 +1,15 @@
 
 # syslogger
 
-Syslogger is similar to postgresql's log processing method, which supports **rolling log files by time and space**.
+Syslogger is a logger for Go, which supports **rolling log files by time and space**.
 
 When the syslogger is started, a goroutine is automatically created to receive data from the pipe serial and write to the right log file.
 
 User can concurrently call the log write API(`Debug(), Log(), Warning(), Error()`), and concurrently write log data to pipe, ensure concurrent write performance.
 
 When the pipe is full, the log write API will be blocked. You can alleviate this problem by increasing the size of the `LogBufferLength` parameter.
+
+The implementation comes from the postgresql log system.
 
 ## Configuration
 
